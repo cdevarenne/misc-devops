@@ -1,0 +1,68 @@
+Original instructions (updates reflected below as of July 2014) at: http://gravitronic.com/compiling-the-nginx-sticky-session-module-in-ubuntu/
+ 
+sudo su -l
+aptitude update && aptitude dist-upgrade
+aptitude install build-essential software-properties-common
+apt-add-repository ppa:nginx/stable
+ 
+ 
+# change precise to different code name if necessary
+# check contents of source list
+cat /etc/apt/sources.list.d/nginx-stable-precise.list
+deb http://ppa.launchpad.net/nginx/stable/ubuntu precise main
+deb-src http://ppa.launchpad.net/nginx/stable/ubuntu precise main
+ 
+aptitude update
+curl http://nginx.org/keys/nginx_signing.key | apt-key add -
+ 
+cd /usr/src/
+apt-get source nginx
+ 
+# add the source code for the sticky module (1.x.x is your nginx version):
+# grab a version from one of the tags (tags tab) at
+# https://bitbucket.org/nginx-goodies/nginx-sticky-module-ng/downloads
+cd nginx-1.x.x/debian/modules
+wget https://bitbucket.org/nginx-goodies/nginx-sticky-module-ng/get/1.2.5.tar.gz
+tar xzf 1.2.5.tar.gz
+ 
+ 
+# modify the compile settings to include the sticky module
+cd ..
+vi rules
+# add it to the bottom of each configuration block: full, light and extras
+# so that the end of each block looks like:
+#
+...
+        --add-module=$(MODULESDIR)/ngx_http_substitutions_filter_module \
+        --add-module=$(MODULESDIR)/nginx-goodies-nginx-sticky-module-ng-bd312d586752
+ 
+ 
+# install some dependencies
+cd /usr/src/nginx-x.y.z/
+aptitude build-dep nginx
+ 
+# update dependencies
+aptitude install liblua5.1-0-dev init-system-helpers
+aptitude install libexpat-dev
+ 
+# compile
+dpkg-buildpackage -b
+ 
+ 
+# Next install the .deb files we created
+cd ..
+dpkg -i nginx-common_1.6.0-1+precise0_all.deb
+dpkg -i nginx-full_1.6.0-1+precise0_amd64.deb
+ 
+ 
+# verify it's installed
+nginx -V
+ 
+ 
+# run it
+service nginx start
+service nginx status
+ 
+ 
+# stop it
+service nginx stop
